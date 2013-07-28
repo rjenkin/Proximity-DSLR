@@ -1,6 +1,6 @@
 /****************************************************************************************
- * File:          ping2.ino
- * Version:       1.0
+ * File:          proximitydslr.ino
+ * Version:       1.1
  * Description:   Photograph a user when they're within range of a camera
  * Author:        Ryan Jenkin
  * Date started:  2013-07-10
@@ -9,29 +9,28 @@
 
 // Pins ---------------------------------------------------------------------------------
 const unsigned int pinPing   = 7;
-const unsigned int pinCamera = 2;
-const unsigned int pinLED1   = 3;
-const unsigned int pinLED2   = 4;
-const unsigned int pinLED3   = 5;
-const unsigned int pinLED4   = 6;
+const unsigned int pinCamera = 9;
+const unsigned int pinLED1   = 2;
+const unsigned int pinLED2   = 3;
+const unsigned int pinLED3   = 4;
 
+//const unsigned int pinLatch = 8;
+//const unsigned int pinData  = 11;
+//const unsigned int pinClock = 12;
 
 // Zones --------------------------------------------------------------------------------
-const unsigned int zones[5][2] = {
-  { // Too close
+// Note: Zones must match or overlap. Gaps will cause infinite loop.
+const unsigned int zones[4][2] = {
+	{ // Too close
 		0   + 0,
 		100 + 5
 	},
-	{ // Shoot zone
+	{ // Take photo
 		100 - 5,
 		200 + 5,
 	},
-	{ // Buzzer
+	{ // Something detected, but don't take photo
 		200 - 5,
-		250 + 5,
-	},
-	{ // LED
-		250 - 5,
 		313 + 0,
 	},
 	{ // Out of range
@@ -42,7 +41,7 @@ const unsigned int zones[5][2] = {
 
 
 // Variables ----------------------------------------------------------------------------
-unsigned int zone        =    4; // Default to out of range zone
+unsigned int zone        =    0; // Default to out of range zone.
 long distance            =  400; // Initial distance set to out of range zone
 unsigned int loopDelay   = 1000; // ms between loop
 unsigned int cameraReady =    0; // A photo can only be taken when this is 0
@@ -55,16 +54,12 @@ void setup() {
 
 	Serial.begin(9600);
 
-	//Serial.println("Setup()");
-	//Serial.write(zones[0][0]);
-
 	pinMode(pinCamera, OUTPUT);
 
 	// LEDs
 	pinMode(pinLED1, OUTPUT);
 	pinMode(pinLED2, OUTPUT);
 	pinMode(pinLED3, OUTPUT);
-	pinMode(pinLED4, OUTPUT);
 
 }
 
@@ -77,7 +72,7 @@ void loop() {
 	// Get distance from Ping)))
 	getDistance();
 
-	// Find the zone
+	// Set the zone variable
 	setZone();
 
 	// Output debug data...
@@ -89,43 +84,31 @@ void loop() {
 	switch (zone) {
 		case 0:
 			// Too close
-			digitalWrite(pinLED1, HIGH);
-			digitalWrite(pinLED2, HIGH);
+			digitalWrite(pinLED1, LOW);
+			digitalWrite(pinLED2, LOW);
 			digitalWrite(pinLED3, HIGH);
-			digitalWrite(pinLED4, HIGH);
 			break;
 
 		case 1:
 			// Shoot zone
-			digitalWrite(pinLED1, HIGH);
+			digitalWrite(pinLED1, LOW);
 			digitalWrite(pinLED2, HIGH);
-			digitalWrite(pinLED3, HIGH);
-			digitalWrite(pinLED4, LOW);
+			digitalWrite(pinLED3, LOW);
 			activateCamera();
 			break;
 
 		case 2:
-			// Buzzer
-			digitalWrite(pinLED1, HIGH);
-			digitalWrite(pinLED2, HIGH);
-			digitalWrite(pinLED3, LOW);
-			digitalWrite(pinLED4, LOW);
-			break;
-
-		case 3:
-			// LED
+			// Detected but out of range
 			digitalWrite(pinLED1, HIGH);
 			digitalWrite(pinLED2, LOW);
 			digitalWrite(pinLED3, LOW);
-			digitalWrite(pinLED4, LOW);
 			break;
 
-		case 4:
+		case 3:
 			// Out of range
 			digitalWrite(pinLED1, LOW);
 			digitalWrite(pinLED2, LOW);
 			digitalWrite(pinLED3, LOW);
-			digitalWrite(pinLED4, LOW);
 			break;
 	}
 
